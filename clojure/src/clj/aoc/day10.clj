@@ -274,38 +274,41 @@
           (reduce (fn [acc v] (replace-at acc v ".")) line idxs)))
       parsed-input))))
 
-(defn start-value
-  [start-x start-y parsed-input]
-  (let [possible-s-values #{\| \- \7 \J \F \L}]
-    (reduce
-     (fn [acc [f syms]]
-       (if (f parsed-input start-x start-y)
-         (clojure.set/intersection acc syms)
-         acc))
-     possible-s-values
-     [[move-up? #{\| \J \L}]
-      [move-down? #{\| \7 \F}]
-      [move-left? #{\- \J \7}]
-      [move-right? #{\- \F \L}]])))
+;; finds the value of start symbol
+(defn start-symbol-value
+  [parsed-input]
+  (let [[start-x start-y] (find-start parsed-input)
+        possible-s-values #{\| \- \7 \J \F \L}
+        start-symbol      (->> [[move-up? #{\| \J \L}]
+                                [move-down? #{\| \7 \F}]
+                                [move-left? #{\- \J \7}]
+                                [move-right? #{\- \F \L}]]
+                               (reduce
+                                (fn [acc [f syms]]
+                                  (if (f parsed-input start-x start-y)
+                                    (clojure.set/intersection acc syms)
+                                    acc))
+                                possible-s-values)
+                               first
+                               str)]
+    (assert (= (count start-symbol) 1))
+    [start-x start-y start-symbol]))
 
-(defn replace-start
-  [start-x start-y start-symbol parsed-input]
-  (update parsed-input start-x #(replace-at % start-y (str start-symbol))))
+(defn replace-start-symbol
+  [parsed-input]
+  (let [[start-x start-y start-symbol] (start-symbol-value parsed-input)]
+    (update parsed-input start-x #(replace-at % start-y start-symbol))))
 
-(defn pre-process
+(defn process-input-part2
   [input]
-  (let [parsed-input        (replace-unnecessary-pipes input)
-        [start-x start-y]   (find-start parsed-input)
-        start-value         (first (start-value start-x start-y (process-input input)))
-        pre-processed-input (replace-start start-x start-y start-value parsed-input)]
-    pre-processed-input))
+  (->> input replace-unnecessary-pipes replace-start-symbol))
 
 (defn find-index-of-dot
   [line]
-  (->>  line
-        (map-indexed (fn [idx ch] [idx ch]))
-        (filter (fn [[_ ch]] (= ch \.)))
-        (map first)))
+  (->> line
+       (map-indexed (fn [idx ch] [idx ch]))
+       (filter (fn [[_ ch]] (= ch \.)))
+       (map first)))
 
 (defn find-included
   [line]
@@ -322,7 +325,7 @@
 (defn day10-part2
   [input]
   (->> input
-       pre-process
+       process-input-part2
        (map find-included)
        (map count)
        (reduce + 0)))
