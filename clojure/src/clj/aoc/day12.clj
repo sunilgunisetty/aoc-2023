@@ -178,3 +178,7 @@
   (->> input
        process-input-part-2
        calculate-result))
+
+
+
+;; TODO refactor this code
