@@ -76,48 +76,40 @@
   [input]
   (apply mapv str input))
 
-(defn find-adjacent-dups
+(defn possible-mirrors
   [input]
   (->> input
+       (map-indexed (fn [idx val] [idx val]))
        (partition-all 2 1)
-       (filter (fn [[a b]] (= a b)))
+       (filter
+        (fn [[[idx-a a] [idx-b b]]] (= a b)))
        (map first)))
 
-(defn find-index-of-dupe
-  [dup input]
-  (->> input
-       (map-indexed
-        (fn [idx val]
-          (when (and (= val dup) (= (get input (inc idx)) dup)) idx )))
-       (remove nil?)
-       first))
+(defn mirror-distance
+  [[idx mirror] input]
+  (loop [prev-idx idx
+         next-idx (inc idx)]
+    (if (= (get input prev-idx) (get input next-idx))
+      (if (or (< (dec prev-idx) 0) (> (inc next-idx) (dec (count input))))
+        (inc idx)
+        (recur (dec prev-idx) (inc next-idx)))
+      nil)))
 
-(defn find-mirror-index
-  [dup parsed-input]
-  (let [index-of-dup (find-index-of-dupe dup parsed-input)]
-    (loop [prev-idx index-of-dup
-           next-idx (inc index-of-dup)]
-      (if (= (get parsed-input prev-idx) (get parsed-input next-idx))
-        (if (or (< (dec prev-idx) 0) (> (inc next-idx) (dec (count parsed-input))))
-          (inc index-of-dup)
-          (recur (dec prev-idx) (inc next-idx)))
-        nil))))
-
-(defn calculate
+(defn calculate-mirror-distance
   [input]
-  (let [dups (find-adjacent-dups input)
-        res (filter some? (map #(find-mirror-index % input) dups))]
-    (assert (< (count res) 2))
-    (first res)))
+  (let [mirrors (possible-mirrors input)
+        result  (filter some? (map #(mirror-distance % input) mirrors))]
+    (assert (< (count result) 2))
+    (first result)))
 
 (defn day13-part1
   [input]
   (let [parsed-input (parse-input input)]
     (reduce
      (fn [acc data]
-       (let [result (calculate data)]
+       (let [result (calculate-mirror-distance data)]
          (if result
            (+ acc (* result 100))
-           (+ acc (calculate (transpose data))))))
+           (+ acc (calculate-mirror-distance (transpose data))))))
      0
      parsed-input)))
