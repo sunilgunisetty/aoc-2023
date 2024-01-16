@@ -167,7 +167,7 @@
   [r1 r2]
   (count (filter true? (map not= r1 r2))))
 
-(defn possible-mirrors-part2
+(defn possible-mirrors-with-smudge
   [input]
   (->> input
        (map-indexed (fn [idx val] [idx val]))
@@ -177,7 +177,7 @@
         (fn [[[idx-a a] [idx-b b]]] (< (diff-row a b) 2)))
        (map first)))
 
-(defn mirror-distance-part2
+(defn mirror-distance-with-smudge
   [[idx mirror] input]
   (loop [smudge-no 0 prev-idx idx next-idx (inc idx)]
     (when-not (> smudge-no 1)
@@ -190,21 +190,21 @@
               (recur smudge-no (dec prev-idx) (inc next-idx))
               (recur (inc smudge-no) (dec prev-idx) (inc next-idx)))))))))
 
-(defn calculate-mirror-distance-part-2
+(defn calculate-mirror-distance-with-smudge
   [input]
-  (let [mirrors (possible-mirrors-part2 input)
-        result  (filter some? (map #(mirror-distance-part2 % input) mirrors))]
+  (let [mirrors (possible-mirrors-with-smudge input)
+        result  (filter some? (map #(mirror-distance-with-smudge % input) mirrors))]
     (assert (< (count result) 2))
     (first result)))
 
-(defn day13-part2
+(defn day13-with-smudge
   [input]
   (let [parsed-input (parse-input input)]
     (reduce
      (fn [acc data]
-       (let [result (calculate-mirror-distance-part-2 data)]
+       (let [result (calculate-mirror-distance-with-smudge data)]
          (if result
            (+ acc (* result 100))
-           (+ acc (calculate-mirror-distance-part-2 (transpose data))))))
+           (+ acc (calculate-mirror-distance-with-smudge (transpose data))))))
      0
      parsed-input)))
