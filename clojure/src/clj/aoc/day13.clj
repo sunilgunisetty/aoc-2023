@@ -67,7 +67,6 @@
 
 ;; Find the line of reflection in each of the patterns in your notes. What number do you get after summarizing all of your notes?
 
-
 (defn parse-input
   [input]
   (map string/split-lines (string/split input #"\n\n")))
@@ -111,5 +110,101 @@
          (if result
            (+ acc (* result 100))
            (+ acc (calculate-mirror-distance (transpose data))))))
+     0
+     parsed-input)))
+
+;; --- Part Two ---
+;; You resume walking through the valley of mirrors and - SMACK! - run directly into one. Hopefully nobody was watching, because that must have been pretty embarrassing.
+
+;; Upon closer inspection, you discover that every mirror has exactly one smudge: exactly one . or # should be the opposite type.
+
+;; In each pattern, you'll need to locate and fix the smudge that causes a different reflection line to be valid. (The old reflection line won't necessarily continue being valid after the smudge is fixed.)
+
+;; Here's the above example again:
+
+;; #.##..##.
+;; ..#.##.#.
+;; ##......#
+;; ##......#
+;; ..#.##.#.
+;; ..##..##.
+;; #.#.##.#.
+
+;; #...##..#
+;; #....#..#
+;; ..##..###
+;; #####.##.
+;; #####.##.
+;; ..##..###
+;; #....#..#
+;; The first pattern's smudge is in the top-left corner. If the top-left # were instead ., it would have a different, horizontal line of reflection:
+
+;; 1 ..##..##. 1
+;; 2 ..#.##.#. 2
+;; 3v##......#v3
+;; 4^##......#^4
+;; 5 ..#.##.#. 5
+;; 6 ..##..##. 6
+;; 7 #.#.##.#. 7
+;; With the smudge in the top-left corner repaired, a new horizontal line of reflection between rows 3 and 4 now exists. Row 7 has no corresponding reflected row and can be ignored, but every other row matches exactly: row 1 matches row 6, row 2 matches row 5, and row 3 matches row 4.
+
+;; In the second pattern, the smudge can be fixed by changing the fifth symbol on row 2 from . to #:
+
+;; 1v#...##..#v1
+;; 2^#...##..#^2
+;; 3 ..##..### 3
+;; 4 #####.##. 4
+;; 5 #####.##. 5
+;; 6 ..##..### 6
+;; 7 #....#..# 7
+;; Now, the pattern has a different horizontal line of reflection between rows 1 and 2.
+
+;; Summarize your notes as before, but instead use the new different reflection lines. In this example, the first pattern's new horizontal line has 3 rows above it and the second pattern's new horizontal line has 1 row above it, summarizing to the value 400.
+
+;; In each pattern, fix the smudge and find the different line of reflection. What number do you get after summarizing the new reflection line in each pattern in your notes?
+
+(defn diff-row
+  [r1 r2]
+  (count (filter true? (map not= r1 r2))))
+
+(defn possible-mirrors-part2
+  [input]
+  (->> input
+       (map-indexed (fn [idx val] [idx val]))
+       (partition-all 2 1)
+       (filter #(= (count %) 2))
+       (filter
+        (fn [[[idx-a a] [idx-b b]]] (< (diff-row a b) 2)))
+       (map first)))
+
+(defn mirror-distance-part2
+  [[idx mirror] input]
+  (loop [smudge-no 0 prev-idx idx next-idx (inc idx)]
+    (when-not (> smudge-no 1)
+      (let [row-diff (diff-row (get input prev-idx) (get input next-idx))]
+        (when (< row-diff 2)
+          (if (or (< (dec prev-idx) 0) (> (inc next-idx) (dec (count input))))
+            (when (= (+ smudge-no row-diff) 1)
+              (inc idx))
+            (if (= row-diff 0)
+              (recur smudge-no (dec prev-idx) (inc next-idx))
+              (recur (inc smudge-no) (dec prev-idx) (inc next-idx)))))))))
+
+(defn calculate-mirror-distance-part-2
+  [input]
+  (let [mirrors (possible-mirrors-part2 input)
+        result  (filter some? (map #(mirror-distance-part2 % input) mirrors))]
+    (assert (< (count result) 2))
+    (first result)))
+
+(defn day13-part2
+  [input]
+  (let [parsed-input (parse-input input)]
+    (reduce
+     (fn [acc data]
+       (let [result (calculate-mirror-distance-part-2 data)]
+         (if result
+           (+ acc (* result 100))
+           (+ acc (calculate-mirror-distance-part-2 (transpose data))))))
      0
      parsed-input)))
