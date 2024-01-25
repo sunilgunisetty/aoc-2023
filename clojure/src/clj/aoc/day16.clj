@@ -40,26 +40,10 @@
      (Exception.
       (str "Invalid Option: Travelling Direction: " travelling-direction ", Ch: "ch ", X: "x ", Y: " y)))))
 
-#_(defn traverse
-    [input]
-    (loop [seen   #{}
-           result []
-           queue  [[:right [0 0]]]]
-      (if (seq queue)
-        (let [[curr-direction position] (first queue)
-              current-ch                (get-in input position)]
-          (if current-ch
-            (if-not (contains? seen [curr-direction position])
-              (recur (conj seen [curr-direction position]) (conj result position) (concat (into [] (rest queue)) (direction curr-direction current-ch position)))
-              (recur seen result (into [] (rest queue))))
-            (recur seen result (into [] (rest queue)))))
-        [result seen])))
-
-
 (defn traverse
-  [input]
+  [entry input]
   (loop [seen  #{}
-         queue [[:right [0 0]]]]
+         queue [entry]]
     (if (seq queue)
       (let [[curr-direction position] (first queue)
             current-ch                (get-in input position)]
@@ -72,6 +56,32 @@
           (recur seen (into [] (rest queue)))))
       seen)))
 
+(defn tiles-energized
+  [entry input]
+  (->> input (traverse entry) (map second) (into #{}) count))
+
 (defn day16-part1
   [input]
-  (->> input traverse (map second) (into #{}) count))
+  (tiles-energized [:right [0 0]] input))
+
+(defn right-entry
+  [input]
+  (map (fn [v] [:right v]) (map vector (range (count input)) (repeat 0) )))
+
+(defn left-entry
+  [input]
+  (map (fn [v] [:left v]) (map vector (range (count input)) (repeat (dec (count input))))))
+
+(defn top-entry
+  [input]
+  (map (fn [v] [:down v]) (map vector (repeat 0) (range (count input)))))
+
+(defn bottom-entry
+  [input]
+  (map (fn [v] [:up v]) (map vector (repeat (dec (count input))) (range (count input)))))
+
+;; Takes 7.5 seconds
+(defn day16-part2
+  [input]
+  (let [entries (mapcat (fn [f] (f input)) [top-entry bottom-entry left-entry right-entry])]
+    (apply max (map #(tiles-energized % input) entries))))
